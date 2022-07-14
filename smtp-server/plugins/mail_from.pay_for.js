@@ -29,10 +29,14 @@ exports.pay_for = function (next, connection, params) {
                 username: user['username'],
                 email: user['email'],
             });
+
+            connection.transaction.notes.isNeedPay = true;
+            connection.transaction.notes.email = email;
             next();
         })
         .catch(err => {
             plugin.logerror(`can't find user ${email}: ${err}`);
+            connection.transaction.notes.isNeedPay = false;
             next();
         })
 }
