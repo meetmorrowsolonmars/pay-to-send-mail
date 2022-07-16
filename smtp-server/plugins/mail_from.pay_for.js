@@ -11,6 +11,7 @@ exports.pay_for = function (next, connection, params) {
 
     const {user, host} = params[0];
     const email = `${user}@${host}`;
+    connection.transaction.parse_body=true;
 
     // TODO: get server address from config
     fetch(`http://localhost:9999/api/users?email=${email}`)
