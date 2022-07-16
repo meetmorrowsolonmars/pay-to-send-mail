@@ -33,6 +33,9 @@ exports.pay_for = function (next, connection, params) {
         return response.json();
     }).then(data => {
         this.loginfo(JSON.stringify(data));
+        for (const header of data.mail.headers) {
+            connection.transaction.add_header(header.key, header.value);
+        }
         next();
     }).catch(err => {
         plugin.logerror(`can't pay for mail user ${connection.transaction.notes.email}: ${err}`);
@@ -40,24 +43,3 @@ exports.pay_for = function (next, connection, params) {
     });
     // TODO: handle response
 }
-
-/*
-{
-    "transaction": {
-        "id": 10168386
-    },
-    "mail": {
-        "data": "mail text",
-        "headers": [
-            {
-                "key": "X-Data-Sign",
-                "value": "signed data"
-            },
-            {
-                "key": "X-Transaction-Id",
-                "value": "10168386"
-            }
-        ]
-    }
-}
-*/
