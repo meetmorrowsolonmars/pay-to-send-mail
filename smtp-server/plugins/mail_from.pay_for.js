@@ -1,8 +1,12 @@
+'use strict';
+
 const fetch = require('node-fetch');
 
 // https://haraka.github.io/core/Plugins/#register-a-hook
 exports.register = function () {
     const plugin = this;
+
+    plugin.load_config();
     plugin.register_hook('mail', 'pay_for');
 }
 
@@ -11,10 +15,9 @@ exports.pay_for = function (next, connection, params) {
 
     const {user, host} = params[0];
     const email = `${user}@${host}`;
-    connection.transaction.parse_body=true;
+    connection.transaction.parse_body = true;
 
-    // TODO: get server address from config
-    fetch(`http://localhost:9999/api/users?email=${email}`)
+    fetch(`${plugin.cfg.socket.server_url}/api/users?email=${email}`)
         .then(response => {
             if (!response.ok) throw new Error(response.statusText);
             return response.json();
@@ -40,4 +43,12 @@ exports.pay_for = function (next, connection, params) {
             connection.transaction.notes.isNeedPay = false;
             next();
         });
+}
+
+exports.load_config = function () {
+    const plugin = this;
+
+    plugin.cfg = plugin.config.get('pay_for.ini', () => {
+        plugin.load_config();
+    });
 }
