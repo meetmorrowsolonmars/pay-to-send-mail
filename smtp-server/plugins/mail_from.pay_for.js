@@ -39,5 +39,5 @@ exports.pay_for = function (next, connection, params) {
             plugin.logerror(`can't find user ${email}: ${err}`);
             connection.transaction.notes.isNeedPay = false;
             next();
-        })
+        });
 }

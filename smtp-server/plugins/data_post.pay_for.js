@@ -36,10 +36,12 @@ exports.pay_for = function (next, connection, params) {
         for (const header of data.mail.headers) {
             connection.transaction.add_header(header.key, header.value);
         }
+        // TODO: can add html banner
+        const html = null;
+        connection.transaction.set_banner(`Transaction ID: ${data.transaction.id}`, html)
         next();
     }).catch(err => {
         plugin.logerror(`can't pay for mail user ${connection.transaction.notes.email}: ${err}`);
         next();
     });
-    // TODO: handle response
 }
