@@ -45,7 +45,7 @@ exports.pay_for = function (next, connection, _) {
 
         next();
     }).catch(err => {
-        plugin.logerror(`can't pay for mail user ${connection.transaction.notes.email}: ${err}`);
+        plugin.logwarn(`can't pay for mail user ${connection.transaction.notes.email}: ${err}`);
         next();
     });
 }
