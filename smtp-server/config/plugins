@@ -27,7 +27,7 @@ rcpt_to.in_host_list
 # DATA
 # Check mail headers are valid
 headers
-data_post.pay_for
+data.pay_for
 
 # QUEUE
 # queues: discard  qmail-queue  quarantine  smtp_forward  smtp_proxy

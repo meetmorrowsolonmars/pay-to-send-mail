@@ -15,7 +15,6 @@ exports.pay_for = function (next, connection, params) {
 
     const {user, host} = params[0];
     const email = `${user}@${host}`;
-    connection.transaction.parse_body = true;
 
     fetch(`${plugin.cfg.socket.server_url}/api/users?email=${email}`)
         .then(response => {
