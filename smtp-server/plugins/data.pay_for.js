@@ -7,51 +7,57 @@ exports.register = function () {
     const plugin = this;
 
     plugin.load_config();
-    plugin.register_hook('data', 'pay_for');
-}
-
-exports.pay_for = function (next, connection, _) {
-    const plugin = this;
-
-    if (!connection.transaction.notes.isNeedPay) {
-        plugin.loginfo('skip pay');
-        next();
-        return;
-    }
-
-    connection.transaction.parse_body = true;
-
-    fetch(`${plugin.cfg.socket.server_url}/api/mails/pay`, {
-        method: 'post', body: JSON.stringify({
-            mail: {
-                from: connection.transaction.notes.email,
-                // TODO: read body
-                data: 'mail body',
-            }
-        }), headers: {'Content-Type': 'application/json', 'CliAuth': plugin.cfg.socket.cli_auth_token}
-    }).then(response => {
-        if (!response.ok) throw new Error(response.statusText);
-        return response.json();
-    }).then(data => {
-        for (const header of data.mail.headers) {
-            connection.transaction.add_header(header.key, header.value);
-        }
-
-        const html = `<div><p>Transaction ID: ${data.transaction.id}</p></div>`;
-        connection.transaction.set_banner(`Transaction ID: ${data.transaction.id}`, html);
-
-        next();
-    }).catch(err => {
-        plugin.logwarn(`can't pay for mail user ${connection.transaction.notes.email}: ${err}`);
-        next();
-    });
+    plugin.register_hook('data', 'pay');
 }
 
 exports.load_config = function () {
     const plugin = this;
 
-    plugin.cfg = plugin.config.get('pay_for.ini', () => {
+    plugin.pay_for_config = plugin.config.get('pay_for.ini', () => {
         plugin.load_config();
     });
 }
 
+exports.pay = async function (next, connection) {
+    const plugin = this;
+    const url = `${plugin.pay_for_config.socket.server_url}/api/mails/pay`;
+    connection.transaction.parse_body = true;
+
+    if (!connection.transaction.notes.is_need_pay) {
+        next();
+        return;
+    }
+
+    try {
+        const response = await fetch(url, {
+            method: 'post',
+            body: JSON.stringify({
+                mail: {
+                    from: connection.transaction.notes.email,
+                }
+            }),
+            headers: {
+                'Content-Type': 'application/json', 'CliAuth': plugin.pay_for_config.socket.cli_auth_token,
+            }
+        });
+        if (!response.ok) {
+            plugin.logwarn(`request execution error ${response.statusText}`);
+            return;
+        }
+
+        const data = await response.json();
+        for (const header of data.mail.headers) {
+            connection.transaction.add_header(header.key, header.value);
+        }
+
+        const template = plugin.pay_for_config.template;
+        const banner_plain = template.banner_plain.replace('%TRANSACTION_ID%', data.transaction.id);
+        const banner_html = template.banner_html.replace('%TRANSACTION_ID%', data.transaction.id);
+
+        connection.transaction.set_banner(banner_plain, banner_html);
+    } catch (err) {
+        plugin.logwarn(`can not pay for mail user ${connection.transaction.notes.email}: ${err}`);
+    }
+
+    next();
+}
