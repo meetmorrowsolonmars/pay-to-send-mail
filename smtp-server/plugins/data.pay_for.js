@@ -46,6 +46,8 @@ exports.pay = async function (next, connection) {
         }
 
         const data = await response.json();
+        connection.transaction.notes.mail_id = data.mail.id;
+
         for (const header of data.mail.headers) {
             connection.transaction.add_header(header.key, header.value);
         }
