@@ -18,28 +18,22 @@ exports.load_config = function () {
     });
 }
 
-exports.sign_message = function (next, connection) {
+exports.sign_message = async function (next, connection) {
     const plugin = this;
     const url = `${plugin.pay_for_config.socket.server_url}/api/mails/sign`;
 
-    if (!connection.transaction.notes.is_need_pay) {
+    if (!connection.transaction.notes.is_need_pay || !connection.transaction.notes.mail_id) {
         next();
         return;
     }
 
-    let message = '';
-
-    connection.transaction.message_stream.on('data', function (chunk) {
-        message += chunk.toString();
-    });
-
-    connection.transaction.message_stream.on('end', async function () {
+    try {
         const response = await fetch(url, {
             method: 'post',
             body: JSON.stringify({
                 mail: {
                     id: connection.transaction.notes.mail_id,
-                    data: message,
+                    data: connection.transaction.body.bodytext,
                 }
             }),
             headers: {
@@ -53,7 +47,10 @@ exports.sign_message = function (next, connection) {
 
         const data = await response.json();
         plugin.loginfo(`message ${data.mail.id} sign ${data.mail.sign}`);
-    });
+    } catch (err) {
+        plugin.logwarn(`can not sign email from ${connection.transaction.notes.email} mail ` +
+            `${connection.transaction.notes.mail_id}: ${err}`);
+    }
 
     next();
 }

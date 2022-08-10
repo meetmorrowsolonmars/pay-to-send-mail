@@ -53,10 +53,15 @@ exports.pay = async function (next, connection) {
         }
 
         const template = plugin.pay_for_config.template;
+        const email_verification_url = template.email_verification_url.replace('%MAIL_ID%', data.mail.id);
         const banner_plain = template.banner_plain.replace('%TRANSACTION_ID%', data.transaction.id);
-        const banner_html = template.banner_html.replace('%TRANSACTION_ID%', data.transaction.id);
+        const banner_plain_verification = template.banner_plain_verification
+            .replace('%EMAIL_VERIFICATION_URL%', email_verification_url);
+        const banner_html = template.banner_html
+            .replace('%TRANSACTION_ID%', data.transaction.id)
+            .replace('%EMAIL_VERIFICATION_URL%', email_verification_url);
 
-        connection.transaction.set_banner(banner_plain, banner_html);
+        connection.transaction.set_banner(`${banner_plain}\n${banner_plain_verification}`, banner_html);
     } catch (err) {
         plugin.logwarn(`can not pay for mail user ${connection.transaction.notes.email}: ${err}`);
     }
