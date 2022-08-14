@@ -42,6 +42,7 @@ exports.sign_message = async function (next, connection) {
         });
         if (!response.ok) {
             plugin.logwarn(`request execution error ${response.statusText}`);
+            next();
             return;
         }
 
